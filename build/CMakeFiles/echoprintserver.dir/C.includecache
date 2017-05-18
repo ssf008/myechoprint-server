@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/opt/myworkspace/echoprint-server/libechoprintserver.c
+math.h
+-
+stdlib.h
+-
+string.h
+-
+libechoprintserver.h
+/opt/myworkspace/echoprint-server/libechoprintserver.h
+
+/opt/myworkspace/echoprint-server/libechoprintserver.h
+stdio.h
+-
+stdint.h
+-
+

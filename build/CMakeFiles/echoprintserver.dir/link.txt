@@ -1,0 +1,1 @@
+/usr/bin/cc  -fPIC   -shared -Wl,-soname,libechoprintserver.so -o libechoprintserver.so CMakeFiles/echoprintserver.dir/libechoprintserver.c.o 

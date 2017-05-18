@@ -1,0 +1,3 @@
+/opt/myworkspace/echoprint-server/build/CMakeFiles/rebuild_cache.dir
+/opt/myworkspace/echoprint-server/build/CMakeFiles/edit_cache.dir
+/opt/myworkspace/echoprint-server/build/CMakeFiles/echoprintserver.dir

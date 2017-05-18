@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+# encoding: utf-8
+import argparse
+import sys
+import time
+import os
+import base64
+from operator import itemgetter
+from flask import Flask, jsonify, request
+from echoprint_server import \
+    decode_echoprint, query_inverted_index, load_inverted_index, create_inverted_index, \
+    parsed_code_streamer, parsing_code_streamer
+
+use_tornado = False
+try:
+    from tornado.wsgi import WSGIContainer
+    from tornado.httpserver import HTTPServer
+    from tornado.ioloop import IOLoop
+    #use_tornado = True
+except:
+    print 'cannot import tornado'
+
+app = Flask(__name__)
+
+
+@app.route('/query/<method>', methods=['POST'])
+#@app.route('/query', methods=['POST'])
+def rest_query(method):
+    NRES = 20
+    echoprint_string = request.form['echoprint']
+    #print "echoprint_string =",echoprint_string
+    #time.sleep(1000)
+    _, codes = decode_echoprint(str(echoprint_string))
+    results = query_inverted_index(codes, app.inverted_index, str(method))
+    # optionally augment results with gids
+    if app.gids is not None:
+        for r in results:
+            r['id'] = app.gids[r['index']]
+    return jsonify(results=results)
+
+@app.route('/getfeature/<base64str>/<userid>', methods=['POST'])
+def test(base64str,userid):
+
+
+    print "base64str = ",base64str
+    print "userid = ",userid
+
+    b = base64.b64decode(base64str)
+    file = open("test.mp3",'wb')
+    file.write(b)
+    file.close()
+
+    p = os.popen('./echoprint-codegen test.mp3 {0}'.format(userid),'r')
+    
+    return jsonify(results='sucess') 
+
+@app.route('/updatelib/<method>', methods=['POST'])
+def test1(method):
+
+    p1 = os.popen("./stop.sh")
+    print "p1 = ",p1
+    p2 = os.popen('cat *.json | echoprint-inverted-index {0}'.format(method))
+    print "p2 = ",p2
+    '''time.sleep(1)
+    p3 = os.popen("./restart.sh")
+    print "p3 = ",p3'''
+    
+    return jsonify(results="sucess")
+@app.route('/restartserver', methods=['POST'])
+def test3():
+
+    ''' p1 = os.popen("./stop.sh")
+    print "p1 = ",p1
+    p2 = os.popen('cat *.json | echoprint-inverted-index {0}'.format(method))
+    print "p2 = ",p2'''
+    #p3 = os.popen("./restart.sh")nohup ./echoprint-rest-service index.bin  &
+    p3 = os.popen('nohup  python ./echoprint-rest-service -p 5678 index.bin &')
+    print "p3 = ",p3
+    
+    return jsonify(results="sucess") 
+
+
+@app.route('/base64tomp3/<method>', methods=['POST'])
+def test2(method):
+
+    print method
+    a = base64.b64encode(method)
+    print a
+    b = base64.b64decode(a)
+    file = open("mytest.mp3",'wb')
+    file.write(b)
+    file.close()
+    return jsonify(results=b) 
+
+
+
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--flask', action='store_true')
+    parser.add_argument('-i', '--ids-file',
+                        help='ids_file contains track ids, one per line')
+    parser.add_argument('-p', '--port', type=int, default=5678,
+                        help='service port (default: 5678)')
+    parser.add_argument('inverted_index_paths', nargs='+')
+    args = parser.parse_args()
+
+    app.inverted_index = load_inverted_index(args.inverted_index_paths)
+    if app.inverted_index is None:
+        print >> sys.stderr, 'loading inverted index from %s failed' % \
+            args.inverted_index_dir
+        exit(1)
+    print 'loaded inverted index'
+
+    if args.ids_file is not None:
+        app.gids = [l.strip() for l in open(args.ids_file)]
+    else:
+        app.gids = None
+
+    if args.flask or (not use_tornado):
+        print 'starting app with flask'
+        app.run(debug=True, host='0.0.0.0', port=args.port)
+    else:
+        http_server = HTTPServer(WSGIContainer(app))
+        http_server.listen(args.port)
+        IOLoop.instance().start()

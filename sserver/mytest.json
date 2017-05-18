@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+# encoding: utf-8
+import json
+
+json_file = open("2.json") 
+echoprint_string =json.load(json_file)
+print type(echoprint_string),echoprint_string
